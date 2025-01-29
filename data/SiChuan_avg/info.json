@@ -1,0 +1,10 @@
+{
+    "name": "TeleChallenge",
+    "n_num_features": 21,
+    "n_classes": 2,
+    "task_type": "binclass",
+    "n_cat_features": 0,
+    "train_size": 3672,
+    "val_size": 1214,
+    "test_size": 1220
+}
