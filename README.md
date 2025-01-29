@@ -20,8 +20,6 @@ To reproduce our results, set the dataset (e.g., SiChuan or SiChuan_avg) and run
 
 ---
 
-# **Running the Code**
-
 ## **Environment Setup**
 All dependencies are listed in `requirements.txt` and can be installed using the following command:
 ```bash
