@@ -114,7 +114,7 @@ if __name__ == '__main__':
     submit_path = osp.join(DATA_PATH, args.dataset_path,args.dataset)
     if torch.cuda.is_available():     
         torch.backends.cudnn.benchmark = True    
-    N, C, y, info = dataname_to_numpy(args.dataset, args.dataset_path)
+    N, C, y, info = dataname_to_numpy(args.dataset, args.dataset_path, "classical")
     if args.mil:
         N = {key: bag_set(N(key)) for key in N}
         C = {key: bag_set(C(key)) for key in C}

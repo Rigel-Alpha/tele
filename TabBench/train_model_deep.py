@@ -1,5 +1,7 @@
 import os.path as osp
 import argparse
+
+import pandas as pd
 from tqdm import tqdm
 import numpy as np
 import json
@@ -172,10 +174,13 @@ if __name__ == '__main__':
         
     args = get_args()
     pprint(vars(args))
+    THIS_PATH = osp.dirname(__file__)
+    DATA_PATH = osp.abspath(osp.join(THIS_PATH, '..'))
+    submit_path = osp.join(DATA_PATH, args.dataset_path, args.dataset)
     if torch.cuda.is_available():     
         torch.backends.cudnn.benchmark = True    
 
-    N, C, y, info = dataname_to_numpy(args.dataset, args.dataset_path)
+    N, C, y, info = dataname_to_numpy(args.dataset, args.dataset_path, "deep")
 
     N_trainval = None if N is None else {key: N[key] for key in ["train", "val"]} if "train" in N and "val" in N else None
     N_test = None if N is None else {key: N[key] for key in ["test"]} if "test" in N else None
@@ -225,7 +230,7 @@ if __name__ == '__main__':
                 json.dump(args.config, fp, sort_keys=True, indent=4)
 
     ## Training Stage over different random seeds
-    loss_list, results_list, time_list = [], [], []
+    pred_list, loss_list, results_list, time_list = [], [], [], []
     for seed in tqdm(range(args.seed_num)):
         args.seed = seed    # update seed  
         method = modeltype_to_method(args.model_type)(args, info['task_type'] == 'regression')
@@ -235,34 +240,24 @@ if __name__ == '__main__':
         loss_list.append(vl)
         results_list.append(vres)
         time_list.append(time_cost)
-        
+    if args.seed_num>1:
+        logits=np.concatenate(pred_list,axis=1).mean(axis=1)
+    else:
+        logits=predic_logits[:,0]
 
+    threshold = 0.5
 
+    pred = np.zeros_like(logits)
+    pred[logits >= threshold] = 0
+    pred[logits < threshold] = 1
+    # submit result
 
-    for result in results_list:
-        for idx, name in enumerate(metric_name):
-            metric_arrays[name].append(result[idx])
+    submit = pd.read_csv(osp.join(submit_path, 'test_msisdn.csv'))
+    submit['is_sa'] = pred.astype(int)
+    submit.to_csv(osp.join(submit_path, 'submit.csv'), index=False)
+    submit['logit'] = logits
+    submit.to_csv(osp.join(submit_path, 'submit_observe.csv'), index=False)
 
-    metric_arrays['Time'] = time_list
-    metric_name = metric_name + ('Time', )
-
-
-    mean_loss = np.mean(np.array(loss_list))
-
-    # Printing results
-    print(f'{args.model_type}: {args.seed_num} Trials')
-    for name in metric_name:
-        if info['task_type'] == 'regression' and name != 'Time':
-            formatted_results = ', '.join(['{:.8e}'.format(e) for e in metric_arrays[name]])
-            print(f'{name} Results: {formatted_results}')
-            print(f'{name} MEAN = {mean_metrics[name]:.8e} ± {std_metrics[name]:.8e}')
-        else:
-            formatted_results = ', '.join(['{:.8f}'.format(e) for e in metric_arrays[name]])
-            print(f'{name} Results: {formatted_results}')
-            print(f'{name} MEAN = {mean_metrics[name]:.8f} ± {std_metrics[name]:.8f}')
-
-    print(f'Mean Loss: {mean_loss:.8e}')
-    
     print('-' * 20, 'GPU info', '-' * 20)
     if torch.cuda.is_available():
         num_gpus = torch.cuda.device_count()

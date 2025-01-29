@@ -64,27 +64,46 @@ class Dataset:
 THIS_PATH = os.path.dirname(__file__)
 DATA_PATH = os.path.abspath(os.path.join(THIS_PATH, '..', '..', '..'))
 
-def dataname_to_numpy(dataset_name, dataset_path):
+def dataname_to_numpy(dataset_name, dataset_path, flag):
     dir_ = Path(os.path.join(DATA_PATH, dataset_path, dataset_name))
+    if flag == "deep":
+        def load(item) -> ArrayDict:
+            if item !='y':
+                return {
+                    x: ty.cast(np.ndarray, np.load(dir_ / f'{item}_{x}.npy', allow_pickle = True))
+                    for x in ['train', 'val', 'test']
+                }
+            else:
+                return {
+                    x: ty.cast(np.ndarray, np.load(dir_ / f'{item}_{x}.npy', allow_pickle = True))
+                    for x in ['train', 'val', 'test']
+                }
 
-    def load(item) -> ArrayDict:
-        if item !='y':
-            return {
-                x: ty.cast(np.ndarray, np.load(dir_ / f'{item}_{x}.npy', allow_pickle = True))  
-                for x in ['train', 'test']
-            }
-        else:
-            return {
-                x: ty.cast(np.ndarray, np.load(dir_ / f'{item}_{x}.npy', allow_pickle = True))  
-                for x in ['train']
-            }
+        return (
+            load('N') if dir_.joinpath('N_train.npy').exists() else None,
+            load('C') if dir_.joinpath('C_train.npy').exists() else None,
+            load('y'),
+            load_json(dir_ / 'info.json'),
+        )
+    else:
+        def load(item) -> ArrayDict:
+            if item !='y':
+                return {
+                    x: ty.cast(np.ndarray, np.load(dir_ / f'{item}_{x}.npy', allow_pickle = True))
+                    for x in ['train', 'test']
+                }
+            else:
+                return {
+                    x: ty.cast(np.ndarray, np.load(dir_ / f'{item}_{x}.npy', allow_pickle = True))
+                    for x in ['train']
+                }
 
-    return (
-        load('N') if dir_.joinpath('N_train.npy').exists() else None,
-        load('C') if dir_.joinpath('C_train.npy').exists() else None,
-        load('y'),
-        load_json(dir_ / 'info.json'),
-    )
+        return (
+            load('N') if dir_.joinpath('N_train.npy').exists() else None,
+            load('C') if dir_.joinpath('C_train.npy').exists() else None,
+            load('y'),
+            load_json(dir_ / 'info.json'),
+        )
 
 
 def data_nan_process(N_data, C_data, num_nan_policy, cat_nan_policy, num_new_value = None, imputer = None, cat_new_value = None):

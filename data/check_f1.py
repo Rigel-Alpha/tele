@@ -2,9 +2,9 @@ import pandas as pd
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, roc_auc_score
 
 # 文件路径
-submit_path = './SiChuan/submit.csv'
-test_true_path = './SiChuan/test_true.csv'
-output_path = './SiChuan/result/xgboost_results.txt'
+submit_path = './SiChuan_avg/submit.csv'
+test_true_path = './SiChuan_avg/test_true.csv'
+output_path = './SiChuan_avg/result/xgboost_results.txt'
 
 # 读取 CSV 文件
 submit_df = pd.read_csv(submit_path)
